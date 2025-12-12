@@ -1,0 +1,97 @@
+{
+  "info": {
+    "name": "Job Application Tracking System (ATS) API",
+    "description": "Postman collection for testing the Job Application Tracking System API endpoints",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{base_url}}/api/auth/register", "host": ["{{base_url}}"], "path": ["api", "auth", "register"]},
+            "body": {"mode": "raw", "raw": "{\"email\": \"candidate@example.com\", \"password\": \"password123\", \"role\": \"candidate\"}"}
+          }
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"]},
+            "body": {"mode": "raw", "raw": "{\"email\": \"candidate@example.com\", \"password\": \"password123\"}"}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jobs",
+      "item": [
+        {
+          "name": "List All Jobs",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {"raw": "{{base_url}}/api/jobs", "host": ["{{base_url}}"], "path": ["api", "jobs"]}
+          }
+        },
+        {
+          "name": "Create Job",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{base_url}}/api/jobs", "host": ["{{base_url}}"], "path": ["api", "jobs"]},
+            "body": {"mode": "raw", "raw": "{\"title\": \"Senior Backend Engineer\", \"description\": \"We are hiring...\", \"company_id\": 1}"}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Applications",
+      "item": [
+        {
+          "name": "Submit Application",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{base_url}}/api/applications", "host": ["{{base_url}}"], "path": ["api", "applications"]},
+            "body": {"mode": "raw", "raw": "{\"job_id\": 1}"}
+          }
+        },
+        {
+          "name": "List My Applications",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {"raw": "{{base_url}}/api/candidates/my-applications", "host": ["{{base_url}}"], "path": ["api", "candidates", "my-applications"]}
+          }
+        },
+        {
+          "name": "Update Application Stage",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{base_url}}/api/applications/1/stage", "host": ["{{base_url}}"], "path": ["api", "applications", "1", "stage"]},
+            "body": {"mode": "raw", "raw": "{\"new_stage\": \"SCREENING\", \"reason\": \"Progressing to next round\"}"}
+          }
+        },
+        {
+          "name": "Get Application History",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {"raw": "{{base_url}}/api/applications/1/history", "host": ["{{base_url}}"], "path": ["api", "applications", "1", "history"]}
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {"key": "base_url", "value": "http://localhost:8000"},
+    {"key": "token", "value": ""}
+  ]
+}
