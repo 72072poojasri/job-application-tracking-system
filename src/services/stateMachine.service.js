@@ -1,4 +1,4 @@
-const ALLOWED_TRANSITIONS = {
+const workflow = {
   Applied: ["Screening", "Rejected"],
   Screening: ["Interview", "Rejected"],
   Interview: ["Offer", "Rejected"],
@@ -7,12 +7,8 @@ const ALLOWED_TRANSITIONS = {
   Rejected: []
 };
 
-function validateTransition(currentStage, nextStage) {
-  const allowed = ALLOWED_TRANSITIONS[currentStage] || [];
-  return allowed.includes(nextStage);
+function isValidTransition(from, to) {
+  return workflow[from]?.includes(to);
 }
 
-module.exports = {
-  validateTransition,
-  ALLOWED_TRANSITIONS
-};
+module.exports = { isValidTransition };

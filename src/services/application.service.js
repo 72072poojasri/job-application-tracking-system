@@ -1,7 +1,15 @@
-const { validateTransition } = require("./stateMachine.service");
+const { addEmailJob } = require("../queues/email.queue");
 
-if (!validateTransition(application.stage, newStage)) {
-  throw new Error(
-    `Invalid transition from ${application.stage} to ${newStage}`
-  );
-}
+// after application creation
+addEmailJob({
+  to: candidate.email,
+  subject: "Application submitted",
+  body: "Your application was received"
+});
+
+// after stage change
+addEmailJob({
+  to: candidate.email,
+  subject: "Application status updated",
+  body: `New stage: ${newStage}`
+});
