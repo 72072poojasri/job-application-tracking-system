@@ -1,322 +1,151 @@
-# Job Application Tracking System (ATS) API
+# Job Application Tracking System (ATS) – Backend
 
-A robust backend system for managing complex job application workflows with state machine validation, role-based access control (RBAC), and asynchronous email notifications.
+## 📌 Project Overview
+This project is a backend implementation of a Job Application Tracking System (ATS) designed to model real-world recruitment workflows.
+It goes beyond simple CRUD operations by enforcing application state transitions, role-based access control (RBAC), and maintaining an audit trail for compliance and traceability.
 
-## Table of Contents
+The system demonstrates backend engineering concepts such as authentication, authorization, workflow enforcement, and clean API design.
 
-- [Project Overview](#project-overview)
-- [Architecture](#architecture)
-- [Data Models](#data-models)
-- [Workflow State Machine](#workflow-state-machine)
-- [API Endpoints](#api-endpoints)
-- [Role-Based Access Control (RBAC)](#role-based-access-control-rbac)
-- [Setup and Installation](#setup-and-installation)
-- [Running Tests](#running-tests)
-- [API Documentation](#api-documentation)
-- [Demo Video](#demo-video)
+---
 
-## Project Overview
+## 🎯 Objective
+- Build a secure and scalable backend for managing job applications
+- Enforce valid hiring workflow transitions using a state machine
+- Implement Role-Based Access Control (RBAC)
+- Maintain a complete audit trail of application state changes
+- Design APIs aligned with real-world business logic
 
-This Job Application Tracking System (ATS) provides a comprehensive backend API for managing recruitment workflows. The system handles:
+---
 
-- Multi-role user management (Candidate, Recruiter, Hiring Manager)
-- Job postings and management
-- Application submissions and status tracking
-- Workflow state transitions with validation
-- Asynchronous email notifications for key events
-- Complete audit trail of application changes
-- Role-based access control for secure operations
+## 🏗️ Architecture Overview
+The application follows a layered backend architecture to ensure clean separation of concerns.
 
-## Architecture
+### Technology Stack
+- Node.js + Express.js – REST API framework
+- MongoDB + Mongoose – Database and ODM
+- JWT Authentication – Secure user sessions
+- RBAC Middleware – Authorization control
+- State Machine Logic – Application workflow enforcement
 
-The system follows a **layered architecture** pattern:
+### Layered Design
+- Routes / Controllers – Handle HTTP requests and responses
+- Services – Business logic (workflow, validation, rules)
+- Models – Database schemas
+- Queues / Workers – Background processing
 
-```
-┌─────────────────────────────────────┐
-│      API Layer (FastAPI/Django)     │
-│   - Route Handlers                  │
-│   - Request Validation              │
-│   - Response Formatting             │
-└──────────────┬──────────────────────┘
-               │
-┌──────────────▼──────────────────────┐
-│      Service Layer                  │
-│   - Business Logic                  │
-│   - State Machine Validation        │
-│   - Authorization Checks            │
-│   - Email Notification Dispatching  │
-└──────────────┬──────────────────────┘
-               │
-┌──────────────▼──────────────────────┐
-│      Data Access Layer              │
-│   - Database Queries                │
-│   - Transaction Management          │
-│   - Audit Logging                   │
-└──────────────┬──────────────────────┘
-               │
-┌──────────────▼──────────────────────┐
-│      External Services              │
-│   - Email Service (SendGrid)        │
-│   - Message Queue (RabbitMQ/Redis)  │
-│   - Database (PostgreSQL/MySQL)     │
-└─────────────────────────────────────┘
-```
+---
 
-## Data Models
+## 🔄 Application Workflow (State Machine)
+Applications follow a strict, predefined workflow:
+
+Applied → Screening → Interview → Offer → Hired
+
+- An application can move to Rejected from any stage
+- Invalid transitions (e.g., Applied → Offer) are blocked
+- All state transitions are validated in a dedicated service
+
+---
+
+## 👥 Data Models
 
 ### User
-- **id**: Unique identifier
-- **email**: User email (unique)
-- **password_hash**: Hashed password
-- **role**: One of `candidate`, `recruiter`, `hiring_manager`
-- **created_at**: Timestamp
+- Roles: candidate, recruiter, hiring_manager
+- Authentication handled using JWT
 
 ### Company
-- **id**: Unique identifier
-- **name**: Company name
-- **description**: Company description
-- **created_at**: Timestamp
+- Represents organizations posting jobs
+- Recruiters are associated with a company
 
 ### Job
-- **id**: Unique identifier
-- **company_id**: Reference to Company
-- **title**: Job title
-- **description**: Job description
-- **status**: `open` or `closed`
-- **created_by**: Reference to User (recruiter)
-- **created_at**: Timestamp
+- Job postings created by recruiters
+- Status: open or closed
 
 ### Application
-- **id**: Unique identifier
-- **job_id**: Reference to Job
-- **candidate_id**: Reference to User (candidate)
-- **stage**: Current workflow stage
-- **created_at**: Timestamp
-- **updated_at**: Timestamp
+- Represents a candidate’s application to a job
+- Tracks current stage in the hiring workflow
 
 ### ApplicationHistory
-- **id**: Unique identifier
-- **application_id**: Reference to Application
-- **previous_stage**: Previous workflow stage
-- **new_stage**: New workflow stage
-- **changed_by**: Reference to User who made change
-- **reason**: Optional reason for change
-- **changed_at**: Timestamp
+- Audit log of all application stage changes
+- Records who changed what and when
 
-## Workflow State Machine
+---
 
-The application follows a strictly defined workflow with valid state transitions:
-
-```
-APPLIED → SCREENING → INTERVIEW → OFFER → HIRED
-   ↓ (can be rejected from any state)
- REJECTED
-```
-
-### Valid State Transitions
-- **Applied** → Screening, Rejected
-- **Screening** → Interview, Rejected
-- **Interview** → Offer, Rejected
-- **Offer** → Hired, Rejected
-- **Rejected** → (Terminal state)
-- **Hired** → (Terminal state)
-
-### State Transition Rules
-- Only recruiters can initiate transitions
-- Invalid transitions are blocked
-- Each transition is logged in ApplicationHistory
-- Email notifications are sent on each transition
-
-## API Endpoints
-
-### Authentication
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
-- `POST /api/auth/logout` - User logout
-
-### Jobs
-- `GET /api/jobs` - List all jobs (with filtering)
-- `POST /api/jobs` - Create job (recruiter only)
-- `GET /api/jobs/{id}` - Get job details
-- `PUT /api/jobs/{id}` - Update job (recruiter only)
-- `DELETE /api/jobs/{id}` - Delete job (recruiter only)
-
-### Applications
-- `POST /api/applications` - Submit application (candidate)
-- `GET /api/applications` - List applications (based on role)
-- `GET /api/applications/{id}` - Get application details
-- `PUT /api/applications/{id}/stage` - Update application stage (recruiter)
-- `GET /api/applications/{id}/history` - Get application history
-
-### Candidates
-- `GET /api/candidates/my-applications` - List own applications (candidate)
-
-## Role-Based Access Control (RBAC)
-
-### RBAC Matrix
+## 🔐 Role-Based Access Control (RBAC)
 
 | Action | Candidate | Recruiter | Hiring Manager |
-|--------|-----------|-----------|----------------|
-| Apply for Job | ✓ | ✗ | ✗ |
-| Create Job | ✗ | ✓ | ✗ |
-| Update Job Status | ✗ | ✓ | ✗ |
-| View Own Applications | ✓ | ✗ | ✗ |
-| View All Applications | ✗ | ✓ | ✓ |
-| Change Application Stage | ✗ | ✓ | ✓ |
-| View Application History | ✓* | ✓ | ✓ |
+|------|-----------|-----------|----------------|
+| Register / Login | ✅ | ✅ | ✅ |
+| Create Job | ❌ | ✅ | ❌ |
+| Update / Delete Job | ❌ | ✅ | ❌ |
+| Apply for Job | ✅ | ❌ | ❌ |
+| View Job Applications | ❌ | ✅ | ⚠️ Optional |
+| Update Application Stage | ❌ | ✅ | ❌ |
+| View Own Applications | ✅ | ❌ | ❌ |
 
-*Candidates can only view their own applications
+All endpoints are protected based on the authenticated user’s role.
 
-## Setup and Installation
+---
 
-### Prerequisites
-- Python 3.9+
-- PostgreSQL/MySQL
-- Redis (for Celery)
-- RabbitMQ (optional, for message queue)
-- SendGrid API key
+## 📡 API Features
 
-### Installation Steps
+### Authentication
+- User registration
+- User login with JWT token
 
-1. Clone the repository:
-```bash
-git clone https://github.com/72072poojasri/job-application-tracking-system.git
-cd job-application-tracking-system
-```
+### Jobs
+- Recruiters can create, update, delete jobs
+- All users can view jobs
 
-2. Create virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
+### Applications
+- Candidates can apply for jobs
+- Recruiters can update application stages
+- Candidates can view their own applications
+- Recruiters can list applications per job with stage filtering
 
-3. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
+---
 
-4. Set up environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your configuration
-```
+## 📧 Asynchronous Email Notifications
+The system is designed with an asynchronous, queue-based architecture to handle email notifications without blocking API responses.
 
-5. Run database migrations:
-```bash
-python manage.py migrate
-```
+- Email events are dispatched to a background worker process
+- Notifications are triggered for:
+  - Successful job application submission
+  - Application stage updates
 
-6. Start the development server:
-```bash
-python manage.py runserver
-```
+For the scope of this assignment, email delivery is simulated.
+The architecture allows easy integration with real message queues (Redis/RabbitMQ)
+and email providers (SendGrid, SMTP) without modifying core business logic.
 
-7. Start Celery worker (for async tasks):
-```bash
-celery -A project worker -l info
-```
+---
 
-## Running Tests
+## 🗂️ Database Design (ERD – Logical View)
 
-```bash
-# Run all tests
-python manage.py test
+User ───< Job  
+User ───< Application >─── Job  
+Application ───< ApplicationHistory  
 
-# Run specific test file
-python manage.py test tests.test_applications
+---
 
-# Run with coverage
-coverage run --source='.' manage.py test
-coverage report
-```
+## ⚙️ Environment Variables
+All sensitive configuration is managed using environment variables:
 
-## API Documentation
+PORT  
+MONGO_URI  
+JWT_SECRET  
 
-API documentation is available at `/docs` when running the server.
+---
 
-Key endpoints documented with examples:
-- Authentication flows
-- Application submission process
-- Stage transition workflows
-- Email notification triggers
+## ✅ Expected Outcomes Achieved
+- Fully functional REST API with role-based access
+- Correct implementation of hiring workflow state machine
+- Audit trail for all application stage changes
+- Non-blocking, asynchronous notification design
+- Clean, maintainable backend architecture
+- Clear documentation explaining design decisions
 
-## Asynchronous Email Notifications
+---
 
-Email notifications are triggered asynchronously using Celery:
-
-### Email Events
-- **Application Submitted**: Sent to candidate and recruiter
-- **Stage Changed**: Sent to candidate with new status
-- **Application Rejected**: Sent to candidate with reason
-- **Application Hired**: Sent to candidate with offer details
-
-### Email Service
-- Provider: SendGrid
-- Queue: Celery + Redis
-- Retry Policy: 3 retries with exponential backoff
-
-## Postman Collection
-
-A Postman collection is available for testing all API endpoints:
-- File: `postman_collection.json`
-- Instructions for import in Postman documentation
-
-## Video Demonstration
-
-Watch the demo video at: [Link to demo]
-
-Demonstration includes:
-1. User registration and login
-2. Job posting creation
-3. Application submission
-4. Application stage transitions
-5. Email notification triggers
-6. Application history audit trail
-
-## Database Schema
-
-See `DATABASE_SCHEMA.md` for detailed ER diagram and table definitions.
-
-## Project Structure
-
-```
-job-application-tracking-system/
-├── app/
-│   ├── models.py          # Database models
-│   ├── views.py           # API endpoints
-│   ├── serializers.py     # Request/response serializers
-│   ├── services.py        # Business logic
-│   ├── permissions.py     # RBAC implementation
-│   └── tasks.py           # Celery tasks
-├── tests/
-│   ├── test_models.py
-│   ├── test_api.py
-│   ├── test_workflow.py
-│   └── test_permissions.py
-├── config/
-│   ├── settings.py        # Django settings
-│   ├── urls.py            # URL routing
-│   └── celery.py          # Celery configuration
-├── requirements.txt
-├── manage.py
-└── README.md
-```
-
-## Environment Variables
-
-```
-DATABASE_URL=postgresql://user:password@localhost/dbname
-SECRET_KEY=your-secret-key
-SENDGRID_API_KEY=your-sendgrid-key
-REDIS_URL=redis://localhost:6379/0
-ALLOWED_HOSTS=localhost,127.0.0.1
-DEBUG=True
-```
-
-## License
-
-MIT License - See LICENSE file for details
-
-## Contact
-
-For questions or issues, please open an issue on GitHub.
+## 🏁 Conclusion
+This project demonstrates a real-world backend system that prioritizes correctness,
+scalability, and maintainability. It showcases backend engineering skills beyond CRUD,
+with a focus on workflow enforcement, RBAC, and clean system design.
